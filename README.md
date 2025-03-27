@@ -5,6 +5,7 @@
 ## Deployment
 ### 环境配置：
 1 `conda create -n <your_env_name> python=3.11`
+
 2 `pip install torch torchvision transformer peft`
 
 ### 使用说明
