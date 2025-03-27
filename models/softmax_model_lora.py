@@ -11,9 +11,9 @@ class softmax_network_lora(nn.Module):
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.num_hiddens = num_hiddens
-        self.linear1 = LoRALinear(num_inputs, num_hiddens, r=lora_r, alpha=lora_alpha)  # 784 -> 2048
+        self.linear1 = LoRALinear(num_inputs, num_hiddens, lora_r=lora_r, lora_alpha=lora_alpha)  # 784 -> 2048
         self.relu = nn.ReLU()
-        self.linear2 = LoRALinear(num_hiddens, num_outputs, r=lora_r, alpha=lora_alpha)  # 2048 -> 10
+        self.linear2 = LoRALinear(num_hiddens, num_outputs, lora_r=lora_r, lora_alpha=lora_alpha)  # 2048 -> 10
 
     def forward(self, x):
         x = x.reshape(-1, self.num_inputs)  # 输入形状调整

@@ -8,6 +8,11 @@ from typing import Any, Dict, List, Tuple
 import download_mnist
 from models.softmax_model import softmax_network
 from models.softmax_model_lora import softmax_network_lora
+from models.test_model import transformer_encoder
+
+from transformers import AutoModel, AutoTokenizer
+from peft import get_peft_model, LoraConfig, TaskType
+
 
 def count_parameters(model):
     total_params = sum(p.numel() for p in model.parameters())
@@ -27,6 +32,15 @@ def evaluate_accuracy(data_iter, net, device):
             correct += (predicted == train_labels).sum().item()
 
     return correct / total
+
+peft_config = LoraConfig(
+    task_type=TaskType.FEATURE_EXTRACTION,
+    inference_mode=False,
+    r=8,          # 低秩的秩
+    lora_alpha=32,
+    target_modules=["q_linear", "k_linear", "v_linear", "out_proj", "linear1", "linear2", "classification_head"],
+    lora_dropout=0.1,
+    bias="none")
 
 def train(train_iter,
            test_iter,
@@ -58,9 +72,9 @@ def train(train_iter,
         # 因此，重新初始化优化器状态可以使微调过程从一个“干净”的状态开始，这通常不会对最终性能产生显著负面影响，反而能避免旧状态对新训练动态的干扰。
         # 也就是说，无需加载优化器状态，直接重新初始化优化器即可
         # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        print(f"加载了来自第 {checkpoint['epoch']+1} 个epoch的checkpoint，继续微调训练...")
+        print(f"LoRA微调: 加载来自第 {checkpoint['epoch']+1} 个epoch的checkpoint: ")
     else:
-        print("非微调模式，从头开始训练。")
+        print("预训练模式, 从头开始训练: ")
 
     for epoch in range(num_epochs):
         net.train()
@@ -118,20 +132,23 @@ def train(train_iter,
                 print(f"总参数数量: {total_params}, 训练参数数量: {trainable_params}, 更新参数量为: {trainable_params/total_params:.4f}")
                 print(f"已保存微调第 {best_result_epoch+1} 个最佳结果的epoch的checkpoint到: {save_path}")
 
+
 if __name__ == '__main__':
     batch_size = 256
     num_epochs = 10
     lr = 10e-2
+    lora_r = 4
+    lora_alpha = 1.0
 
     train_iter, test_iter = download_mnist.load_data_fashion_mnist(batch_size=batch_size)
 
     # 定义训练网络：预训练时r=0，alpha=0；微调时r=4，alpha=1.0
-    #net = softmax_network_lora(num_inputs=784, num_outputs=10, num_hiddens=2048, lora_r=0, lora_alpha=0)
-    net = softmax_network_lora(num_inputs=784, num_outputs=10, num_hiddens=2048, lora_r=4, lora_alpha=1.0)
+    net = transformer_encoder(num_layers=3, embed_dim=784, num_heads=8, ff_dim=1536, dropout=0.1, lora_r=0, lora_alpha=0.0)
+    #net = transformer_encoder(num_layers=3, embed_dim=784, num_heads=8, ff_dim=1536, dropout=0.1, lora_r=lora_r, lora_alpha=lora_alpha)
 
     loss = nn.CrossEntropyLoss(reduction="mean")
     optimizer = torch.optim.SGD(net.parameters(), lr=lr)
 
     # 定义训练：预训练选第一个，微调选第二个
-    #train(train_iter=train_iter, test_iter=test_iter, net=net, loss=loss, num_epochs=10, optimizer=optimizer, save_path="checkpoints/pretrain/checkpoint.pth")
-    train(train_iter=train_iter, test_iter=test_iter, net=net, loss=loss, num_epochs=10, optimizer=optimizer, is_finetune=True, checkpoint_path="checkpoints/pretrain/checkpoint.pth", save_path="checkpoints/finetune/checkpoint.pth")
+    train(train_iter=train_iter, test_iter=test_iter, net=net, loss=loss, num_epochs=10, optimizer=optimizer, save_path="checkpoints/pretrain/checkpoint.pth")
+    #train(train_iter=train_iter, test_iter=test_iter, net=net, loss=loss, num_epochs=10, optimizer=optimizer, is_finetune=True, checkpoint_path="checkpoints/pretrain/checkpoint.pth", save_path="checkpoints/finetune/checkpoint.pth")
