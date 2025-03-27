@@ -9,4 +9,8 @@
 2 `pip install torch torchvision transformer peft`
 
 ### 使用说明
-`train_with_finetune.py`支持了基于分类任务的预训练与LoRA微调，其中LoRA无调用peft封装。基于此，`train_with_finetune_transformer.py`支持了transformer encoder。模型存放在`models`中。如需实验，请通过`download_mnist.py`下载简单的十分类数据集。
+`train_with_finetune.py`目前支持了预训练与LoRA微调，支持了保存最优checkpoint与训练参数量显示，其中LoRA无调用peft封装。
+
+基于此，`train_with_finetune_transformer.py`支持了transformer encoder。
+
+模型存放在`models`中，如需实验，请通过`download_mnist.py`下载简单的十分类数据集。
