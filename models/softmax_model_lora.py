@@ -14,12 +14,16 @@ class softmax_network_lora(nn.Module):
         self.linear1 = LoRALinear(num_inputs, num_hiddens, r=lora_r, alpha=lora_alpha)  # 784 -> 2048
         self.relu = nn.ReLU()
         self.linear2 = LoRALinear(num_hiddens, num_outputs, r=lora_r, alpha=lora_alpha)  # 2048 -> 10
-        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = x.reshape(-1, self.num_inputs)  # 输入形状调整
         x = self.linear1(x)
         x = self.relu(x)
         x = self.linear2(x)
-        x = self.softmax(x)
-        return x
+        return x # shape = [256, 10]
+    
+if __name__ == '__main__':
+    net = softmax_network_lora()
+    x = torch.randn(256, 1, 28, 28)
+    y = net(x)
+    print(y.shape)

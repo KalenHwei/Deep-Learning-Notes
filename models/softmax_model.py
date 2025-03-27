@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 class softmax_network(nn.Module):
     def __init__(self, num_inputs=784, num_outputs=10, num_hiddens=2048):
@@ -19,3 +20,8 @@ class softmax_network(nn.Module):
         x = self.softmax(x)
         return x
 
+if __name__ == '__main__':
+    net = softmax_network()
+    x = torch.randn(256, 1, 28, 28)
+    output = net(x) 
+    print(output.shape)# [256, 10] 是个logits
